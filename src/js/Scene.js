@@ -3,27 +3,15 @@ import Tile from './Tile'
 import DetailView from './Detail'
 import { ev } from './utils/utils'
 
-import trippyShader from '../glsl/trippyShader.glsl'
-import shapeShader from '../glsl/shapeShader.glsl'
 import revealShader from '../glsl/revealShader.glsl'
-import gooeyShader from '../glsl/gooeyShader.glsl'
-import waveShader from '../glsl/waveShader.glsl'
 
 const perspective = 800
 
 const shaders = [
-    trippyShader,
-    shapeShader,
-    gooeyShader,
-    waveShader,
     revealShader,
 ]
 
 const durations = [
-    0.5,
-    0.5,
-    0.5,
-    0.8,
     0.8,
 ]
 
@@ -31,7 +19,7 @@ export default class Scene {
 
     constructor($scene) {
         this.container = $scene
-        this.$tiles = document.querySelectorAll('.slideshow-list__el')
+        this.$tile = document.querySelectorAll('.slideshow-list__el')
 
         this.W = window.innerWidth
         this.H = window.innerHeight
@@ -66,7 +54,8 @@ export default class Scene {
         this.renderer.setSize(this.W, this.H)
         this.renderer.setPixelRatio(window.devicePixelRatio)
 
-        this.tiles = Array.from(this.$tiles).map(($el, i) => new Tile($el, this, durations[i], shaders[i]))
+        console.log(this.$tile);
+        this.tile = new Tile(this.$tile[0], this, durations[0], shaders[0])
 
         this.update()
     }
@@ -112,9 +101,7 @@ export default class Scene {
     update() {
         requestAnimationFrame(this.update.bind(this))
 
-        this.tiles.forEach((tile) => {
-            tile.update()
-        })
+        this.tile.update()
 
         this.renderer.render(this.mainScene, this.camera)
     }
