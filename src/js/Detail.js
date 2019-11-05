@@ -90,13 +90,6 @@ export default class DetailView {
             ease: Power2.easeInOut,
             force3D: true,
         })
-
-        TM.delayedCall(0.3, () => {
-            ev('toggleDetail', {
-                open: false,
-                force: true,
-            })
-        })
     }
 
     toggleReveal({ shouldOpen, target }) {

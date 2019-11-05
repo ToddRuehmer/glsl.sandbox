@@ -15,7 +15,7 @@ const initApp = () => {
     APP.Layout = new Layout()
 }
 
-if (document.readyState === 'complete' || (document.readyState !== 'loading' && !document.documentElement.doScroll)) {
+if (document.readyState === 'complete' || (document.readyState !== 'loading')) {
     initApp()
 } else {
     document.addEventListener('DOMContentLoaded', initApp)

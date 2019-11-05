@@ -1,19 +1,10 @@
 import * as THREE from 'three'
 import Tile from './Tile'
-import DetailView from './Detail'
 import { ev } from './utils/utils'
 
 import revealShader from '../glsl/revealShader.glsl'
 
 const perspective = 800
-
-const shaders = [
-    revealShader,
-]
-
-const durations = [
-    0.8,
-]
 
 export default class Scene {
 
@@ -25,19 +16,13 @@ export default class Scene {
         this.H = window.innerHeight
 
         this.mouse = new THREE.Vector2(0, 0)
-        this.activeTile = null
 
         this.start()
-
-        this.detailview = new DetailView()
-
 
         this.bindEvent()
     }
 
     bindEvent() {
-        document.addEventListener('toggleDetail', ({ detail: shouldOpen }) => { this.onToggleView(shouldOpen) })
-
         window.addEventListener('resize', () => { this.onResize() })
     }
 
@@ -54,8 +39,7 @@ export default class Scene {
         this.renderer.setSize(this.W, this.H)
         this.renderer.setPixelRatio(window.devicePixelRatio)
 
-        console.log(this.$tile);
-        this.tile = new Tile(this.$tile[0], this, durations[0], shaders[0])
+        this.tile = new Tile(this.$tile[0], this, 0.8, revealShader)
 
         this.update()
     }
@@ -86,13 +70,6 @@ export default class Scene {
 
         this.camera.updateProjectionMatrix()
         this.renderer.setSize(this.W, this.H)
-    }
-
-    onToggleView({ target, open }) {
-        this.activeTile = target // !== undefined ? target : this.activeTile
-
-        ev('lockScroll', { lock: open })
-        ev('tile:zoom', { tile: this.activeTile, open })
     }
 
     /* Actions

@@ -1,8 +1,6 @@
 import * as THREE from 'three'
 import { TweenMax as TM, Power2, Power3, Expo } from 'gsap/all'
-import Scrollbar from 'smooth-scrollbar'
 import vertexShader from '../glsl/vertexShader.glsl'
-import { SplitText as ST } from './vendors/gsap/SplitText'
 
 import { clamp, getRatio, wrap, ev } from './utils/utils'
 
@@ -14,8 +12,6 @@ export default class Tile {
             body: document.body,
             el: $el,
             link: $el.querySelector('a'),
-            text: $el.querySelectorAll('.tile__title, .tile__cta'),
-            title: $el.querySelector('.tile__title').innerText,
         }
 
         this.duration = duration
@@ -31,9 +27,6 @@ export default class Tile {
         this.clock = new THREE.Clock()
 
         this.mouse = new THREE.Vector2(0, 0)
-
-        this.scroll = 0
-        this.prevScroll = 0
         this.delta = 0
         this.hasClicked = false
         this.isZoomed = false
@@ -41,23 +34,14 @@ export default class Tile {
         this.loader = new THREE.TextureLoader()
         this.preload([this.mainImage.src, this.mainImage.dataset.hover, '/dist/img/shape.jpg'], () => { this.initTile() })
 
-        this.Scroll = Scrollbar.get(document.querySelector('.scrollarea'))
-
         this.bindEvent()
     }
 
-    bindEvent() {
-        document.addEventListener('tile:zoom', ({ detail }) => { this.zoom(detail) })
-
-
-        window.addEventListener('resize', () => { this.onResize() })
+    bindEvent() {window.addEventListener('resize', () => { this.onResize() })
         window.addEventListener('mousemove', (e) => { this.onMouseMove(e) })
 
         this.$els.link.addEventListener('mouseenter', () => { this.onPointerEnter() })
         this.$els.link.addEventListener('mouseleave', () => { this.onPointerLeave() })
-        this.$els.link.addEventListener('click', (e) => { this.onClick(e) })
-
-        this.Scroll.addListener((s) => { this.onScroll(s) })
     }
 
     /* Handlers
@@ -71,11 +55,6 @@ export default class Tile {
         if (!this.mesh) return
 
         this.hasClicked = true
-
-        ev('toggleDetail', {
-            open: true,
-            target: this,
-        })
     }
 
     onPointerEnter() {
@@ -86,7 +65,6 @@ export default class Tile {
         const idx = clamp([...this.$els.el.parentElement.children].indexOf(this.$els.el) + 1, 1, 5)
 
         document.documentElement.style.setProperty('--color-bg', `var(--color-bg${idx})`)
-        document.documentElement.style.setProperty('--color-text', `var(--color-text${idx})`)
 
         if (!this.mesh) return
 
@@ -117,10 +95,6 @@ export default class Tile {
         this.uniforms.u_res.value.set(window.innerWidth, window.innerHeight)
     }
 
-    onScroll({ offset, limit }) {
-        this.scroll = offset.x / limit.x
-    }
-
     onMouseMove(event) {
         if (this.isZoomed || this.hasClicked || APP.Layout.isMobile) return
 
@@ -135,14 +109,6 @@ export default class Tile {
     --------------------------------------------------------- */
 
     initTile() {
-        this.stgs = new ST(this.$els.text, { type: 'lines', linesClass: 'line' })
-
-        this.stgs.lines.forEach((l) => {
-            const div = document.createElement('div')
-            div.classList.add('line-ctn')
-            wrap(l, div)
-        })
-
         const texture = this.images[0]
         const hoverTexture = this.images[1]
 
@@ -204,96 +170,12 @@ export default class Tile {
     }
 
     update() {
-        this.delta = Math.abs((this.scroll - this.prevScroll) * 2000)
-
         if (!this.mesh) return
 
         this.move()
 
-        this.prevScroll = this.scroll
-
         if (!this.isHovering) return
         this.uniforms.u_time.value += this.clock.getDelta()
-    }
-
-    zoom({ tile, open }) {
-        const shouldZoom = tile === this
-
-        const newScl = {
-            x: shouldZoom ? window.innerWidth * 0.44 : this.sizes.x,
-            y: shouldZoom ? window.innerHeight - 140 : this.sizes.y,
-        }
-
-        const newPos = {
-            x: shouldZoom ? window.innerWidth / 2 - window.innerWidth * 0.05 - this.sizes.x * 0.95 : this.offset.x,
-            y: shouldZoom ? -20 : this.offset.y,
-        }
-
-        const newRatio = getRatio(newScl, this.images[1].image)
-
-        const delay = shouldZoom ? 0.4 : 0
-
-        this.hide(!shouldZoom, !open)
-
-        TM.to(this.uniforms.u_progressClick, 1.2, {
-            value: shouldZoom ? 1 : 0,
-            ease: Power2.easeInOut,
-            onComplete: () => {
-                this.isZoomed = shouldZoom
-                this.hasClicked = open
-
-                TM.to(this.uniforms.u_progressHover, this.duration, {
-                    value: shouldZoom ? 1 : 0,
-                    ease: Power2.easeInOut,
-                })
-
-                ev('view:toggle', { shouldOpen: shouldZoom, target: this })
-            },
-        })
-
-        TM.to(this.mesh.scale, 1.2, {
-            delay,
-            x: newScl.x,
-            y: newScl.y,
-            ease: Expo.easeInOut,
-            onUpdate: () => { this.getBounds() },
-        })
-
-        TM.to(this.mesh.position, 1.2, {
-            delay,
-            x: newPos.x,
-            y: newPos.y,
-            ease: Expo.easeInOut,
-        })
-
-        TM.to(this.uniforms.u_hoverratio.value, 1.2, {
-            delay,
-            x: newRatio.x,
-            y: newRatio.y,
-            ease: Expo.easeInOut,
-        })
-
-        TM.staggerTo(this.stgs.lines, 1, {
-            yPercent: shouldZoom ? 100 : 0,
-            ease: Expo.easeInOut,
-            force3D: true,
-        }, 0.35 / this.stgs.lines.length)
-    }
-
-
-    hide(shouldHide, force) {
-        const delay = shouldHide && !force ? 0 : 1.2
-        TM.to(this.uniforms.u_alpha, 0.5, {
-            delay,
-            value: shouldHide && !force ? 0 : 1,
-            ease: Power3.easeIn,
-        })
-
-        TM.to(this.$els.el, 0.5, {
-            delay,
-            alpha: shouldHide && !force ? 0 : 1,
-            force3D: true,
-        })
     }
 
 
